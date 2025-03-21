@@ -4,14 +4,11 @@
 
 [![](https://img.shields.io/crates/v/cloud-file-storage.svg)](https://crates.io/crates/cloud-file-storage)
 [![](https://img.shields.io/crates/d/cloud-file-storage.svg)](https://img.shields.io/crates/d/cloud-file-storage.svg)
-[![](https://docs.rs/cloud-file-storage/badge.svg)](https://docs.rs/cloud-file-storage)
 [![](https://img.shields.io/crates/l/cloud-file-storage.svg)](./license)
 
 </center>
 
 [Official Documentation](https://docs.ltpp.vip/cloud-file-storage/)
-
-[Api Docs](https://docs.rs/cloud-file-storage/latest/cloud_file_storage/)
 
 > Cloud file storage server based on the Rust hyperlane framework, supporting multiple file types for upload.
 
