@@ -1,0 +1,45 @@
+[package]
+name = "cloud-file-storage"
+version = "0.0.1"
+edition = "2024"
+authors = ["ltpp-universe <root@ltpp.vip>"] 
+license = "MIT"
+description = """Cloud file storage server based on the Rust hyperlane framework, supporting multiple file types for upload."""
+keywords = ["http", "request", "Image", "cloud", "storage"]
+repository = "https://github.com/ltpp-universe/cloud-file-storage.git"
+categories = ["network-programming", "web-programming"]
+exclude = [
+    "target",
+    "Cargo.lock",
+    "logs",
+    ".github",
+    "**/*.pid",
+    "**/*.log",
+    "logs"
+]
+
+[dependencies]
+bin-encode-decode = "0.1.0"
+chrono = "0.4.40"
+hex = "0.4.3"
+hyperlane = "4.42.0"
+rand = "0.9.0"
+sha2 = "0.10.8"
+
+[profile.dev]
+incremental = false
+opt-level = 3
+lto = true
+panic = "unwind"
+debug = false
+codegen-units = 1
+strip = "debuginfo"
+
+[profile.release]
+incremental = false
+opt-level = 3
+lto = true
+panic = "unwind"
+debug = false
+codegen-units = 1
+strip = "debuginfo"

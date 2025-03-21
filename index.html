@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="zh">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0"
+    />
+    <link rel="icon" href="https://ltpp.vip/logo.png" type="image/x-icon" />
+    <title>文件上传</title>
+    <style>
+      * {
+        user-select: none;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        text-align: center;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+      .container {
+        max-width: 400px;
+        margin: auto;
+        background: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 0 8px rgba(0, 0, 0, 0.1);
+      }
+      .title,
+      .history-title {
+        margin: 14px 0px;
+      }
+      .history-title {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+      }
+      input[type='file'] {
+        display: none;
+      }
+      .upload-btn {
+        width: 100%;
+        padding: 12px;
+        background: linear-gradient(45deg, #007bff, #0056b3);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        display: block;
+        text-align: center;
+      }
+      .upload-btn:hover {
+        background: linear-gradient(45deg, #0056b3, #003d82);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        transform: translateY(-1px);
+      }
+      .history {
+        margin-top: 20px;
+        text-align: left;
+      }
+      .history-controls {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+      }
+      .history-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: #fff;
+        padding: 10px;
+        margin: 5px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        cursor: pointer;
+      }
+      .file-name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        text-align: left;
+        margin-right: 10px;
+        color: #007bff;
+      }
+      .right-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex-shrink: 0;
+      }
+      .upload-time {
+        white-space: nowrap;
+        color: #5bc0de;
+      }
+      .history-item button {
+        background: red;
+        color: white;
+        padding: 5px;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .clear-history-btn,
+      .export-history-btn,
+      .import-history-btn {
+        width: 32%;
+        padding: 12px;
+        background: linear-gradient(45deg, #ff4b5c, #ff1e42);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+      .clear-history-btn:hover,
+      .export-history-btn:hover,
+      .import-history-btn:hover {
+        background: linear-gradient(45deg, #ff1e42, #c70024);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.2);
+        transform: translateY(-1px);
+      }
+      .loading {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: white;
+        font-size: 20px;
+        display: none;
+        z-index: 9999;
+      }
+      a:hover {
+        color: #003d82;
+      }
+    </style>
+  </head>
+  <body>
+    <input
+      type="file"
+      id="import_input"
+      accept="application/json"
+      onchange="importHistory(event)"
+    />
+    <div class="loading" id="loading"></div>
+
+    <div class="container">
+      <h2 class="title">文件上传</h2>
+      <input type="file" id="file_input" multiple onchange="uploadFile()" />
+      <button
+        class="upload-btn"
+        onclick="document.getElementById('file_input').click()"
+      >
+        选择文件并上传
+      </button>
+
+      <div class="history">
+        <h4 class="history-title">上传历史</h4>
+        <div class="history-controls">
+          <button class="clear-history-btn" onclick="clearHistory()">
+            清空历史
+          </button>
+          <button class="export-history-btn" onclick="exportHistory()">
+            导出历史
+          </button>
+          <button
+            class="import-history-btn"
+            onclick="document.getElementById('import_input').click()"
+          >
+            导入历史
+          </button>
+        </div>
+        <div id="history_list"></div>
+      </div>
+    </div>
+
+    <script>
+      var uploadHistoryKey = 'uploadHistory';
+      var MAX_FILENAME_LENGTH = 20;
+
+      function truncateMiddle(str, max_length) {
+        if (str.length <= max_length) return str;
+        var left_length = Math.floor((max_length - 3) / 2);
+        var right_length = max_length - 3 - left_length;
+        return (
+          str.substring(0, left_length) +
+          '...' +
+          str.substring(str.length - right_length)
+        );
+      }
+
+      function openHistory(element) {
+        var url = element.getAttribute('data-url');
+        if (url) window.open(url, '_blank');
+      }
+
+      function loadHistory() {
+        var loading = document.getElementById('loading');
+        loading.textContent = '加载历史中，请稍候...';
+        loading.style.display = 'flex';
+        var history = [];
+        try {
+          history = JSON.parse(localStorage.getItem(uploadHistoryKey)) || [];
+        } catch {
+          clearHistory();
+        }
+        try {
+          document.getElementById('history_list').innerHTML = history
+            .map(
+              (item, index) => `
+            <div class="history-item" data-url="${
+              item.url
+            }" onclick="openHistory(this)">
+                <span class="file-name" title="${item.name}">${truncateMiddle(
+                item.name,
+                MAX_FILENAME_LENGTH
+              )}</span>
+                <div class="right-info">
+                    <span class="upload-time">耗时: ${item.cost ?? '未知'}${
+                item.cost ? 'ms' : ''
+              }</span>
+                    <button onclick="deleteHistory(${index}); event.stopPropagation();">删除</button>
+                </div>
+            </div>
+        `
+            )
+            .join('');
+        } catch {
+          clearHistory();
+          alert('加载历史失败');
+        } finally {
+          setTimeout(() => {
+            loading.style.display = 'none';
+          }, 360);
+        }
+      }
+
+      function saveToHistory(name, url, cost) {
+        var history = [];
+        try {
+          history = JSON.parse(localStorage.getItem(uploadHistoryKey)) || [];
+        } catch {
+          clearHistory();
+        }
+        history.unshift({ name, url, cost, time: Date.now() });
+        localStorage.setItem(uploadHistoryKey, JSON.stringify(history));
+        loadHistory();
+      }
+
+      function deleteHistory(index) {
+        var history = [];
+        try {
+          history = JSON.parse(localStorage.getItem(uploadHistoryKey)) || [];
+        } catch {}
+        history.splice(index, 1);
+        localStorage.setItem(uploadHistoryKey, JSON.stringify(history));
+        loadHistory();
+      }
+
+      function clearHistory() {
+        try {
+          localStorage.removeItem(uploadHistoryKey);
+          loadHistory();
+        } catch {}
+      }
+
+      function exportHistory() {
+        var history = localStorage.getItem(uploadHistoryKey) || '[]';
+        var blob = new Blob([history], { type: 'application/json' });
+        var now = new Date();
+        var pad = (num) => num.toString().padStart(2, '0');
+        var timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(
+          now.getDate()
+        )}${pad(now.getHours())}${pad(now.getMinutes())}${pad(
+          now.getSeconds()
+        )}`;
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `${document.title}_${timestamp}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+
+      function importHistory(event) {
+        var loading = document.getElementById('loading');
+        loading.textContent = '导入中，请稍候...';
+        loading.style.display = 'flex';
+
+        var file = event.target.files[0];
+        if (!file) return;
+
+        var reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            var imported = JSON.parse(e.target.result);
+            if (!Array.isArray(imported)) throw new Error();
+            var current = [];
+            try {
+              current = JSON.parse(
+                localStorage.getItem(uploadHistoryKey) || '[]'
+              );
+            } catch {
+              clearHistory();
+            }
+            var merged = [...current, ...imported].sort(
+              (a, b) => b.time - a.time
+            );
+            localStorage.setItem(uploadHistoryKey, JSON.stringify(merged));
+            loadHistory();
+          } catch {
+            alert('导入失败，请检查文件格式');
+          } finally {
+            loading.style.display = 'none';
+            event.target.value = '';
+          }
+        };
+        reader.onerror = () => {
+          alert('文件读取失败');
+          loading.style.display = 'none';
+          event.target.value = '';
+        };
+        reader.readAsText(file);
+      }
+
+      async function uploadFile() {
+        var files = document.getElementById('file_input').files;
+        if (files.length === 0) return;
+
+        var loading = document.getElementById('loading');
+        loading.textContent = `上传中，请稍候... 剩余任务: ${files.length} / 总任务: ${files.length}`;
+        loading.style.display = 'flex';
+
+        let tasksLeft = files.length;
+        var updateCounter = () => {
+          loading.textContent = `上传中，请稍候... 剩余任务: ${tasksLeft} / 总任务: ${files.length}`;
+        };
+
+        try {
+          await Promise.all(
+            Array.from(files).map(async (file) => {
+              try {
+                var start = performance.now();
+                var buffer = await file.arrayBuffer();
+                var res = await fetch(
+                  `/add_file?file_name=${encodeURIComponent(file.name)}`,
+                  {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/octet-stream' },
+                    body: buffer,
+                  }
+                );
+                var data = await res.json();
+
+                if (data.code === 1) {
+                  saveToHistory(
+                    file.name,
+                    data.data,
+                    Math.round(performance.now() - start)
+                  );
+                } else if (data.msg) {
+                  alert(data.msg);
+                }
+              } catch {
+                alert('请求失败，请检查网络');
+              } finally {
+                tasksLeft--;
+                updateCounter();
+              }
+            })
+          );
+        } finally {
+          loading.style.display = 'none';
+          document.getElementById('file_input').value = '';
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', loadHistory);
+    </script>
+  </body>
+</html>
