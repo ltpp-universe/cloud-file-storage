@@ -14,7 +14,7 @@
 
 [Api Docs](https://docs.rs/cloud-file-storage/latest/cloud_storage/)
 
-> Image hosting server based on the Rust cloud-file-storage framework, supporting multiple file types for upload.
+> Cloud file storage server based on the Rust hyperlane framework, supporting multiple file types for upload.
 
 ## Using Existing Service (Slower Due to Multiple Server Relays)
 
